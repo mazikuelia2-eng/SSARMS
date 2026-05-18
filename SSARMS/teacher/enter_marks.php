@@ -2,8 +2,6 @@
 session_start();
 include '../db.php';
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 /* =========================
    AUTH CHECK
@@ -51,12 +49,22 @@ $class_id = $_GET['class_id'] ?? null;
 $subjects = null;
 if ($class_id) {
     $subjects = mysqli_query($conn, "
-        SELECT subject_id, subject_name
-        FROM subject
-        WHERE class_id = '$class_id'
-        AND teacher_id = '$teacher_id'
-        ORDER BY subject_name ASC
-    ");
+
+    SELECT
+        s.subject_id,
+        s.subject_name
+
+    FROM teacher_subject ts
+
+    INNER JOIN subject s
+        ON ts.subject_id = s.subject_id
+
+    WHERE ts.teacher_id = '$teacher_id'
+    AND ts.class_id = '$class_id'
+
+    ORDER BY s.subject_name ASC
+
+");
 }
 
 /* =========================
@@ -230,6 +238,8 @@ td{
 <body>
 
 <?php include 'teacher_sidebar.php'; ?>
+
+<?php include 'teacher_navbar.php'; ?>
 
 <div class="container">
 

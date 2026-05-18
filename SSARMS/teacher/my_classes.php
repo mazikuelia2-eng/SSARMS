@@ -25,12 +25,14 @@ if (!$teacher) {
 }
 
 $teacher_id = $teacher['teacher_id'];
-
 /* =========================
-   GET CLASSES + SUBJECTS (FIXED)
+   GET CLASSES + SUBJECTS
 ========================= */
+
 $class_query = mysqli_query($conn, "
-    SELECT 
+
+    SELECT
+
         c.class_id,
         c.class_name,
 
@@ -41,18 +43,22 @@ $class_query = mysqli_query($conn, "
 
     FROM teacher_class tc
 
-    JOIN class c 
+    INNER JOIN class c
         ON tc.class_id = c.class_id
 
-    LEFT JOIN subject s 
-        ON s.class_id = c.class_id
-        AND s.teacher_id = '$teacher_id'
+    LEFT JOIN teacher_subject ts
+        ON c.class_id = ts.class_id
+        AND ts.teacher_id = '$teacher_id'
+
+    LEFT JOIN subject s
+        ON ts.subject_id = s.subject_id
 
     WHERE tc.teacher_id = '$teacher_id'
 
     GROUP BY c.class_id, c.class_name
 
     ORDER BY c.class_name ASC
+
 ");
 ?>
 

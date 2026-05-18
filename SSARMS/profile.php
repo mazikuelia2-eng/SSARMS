@@ -15,12 +15,41 @@ if (isset($_POST['update_profile'])) {
     $email = mysqli_real_escape_string($conn, $_POST['email']);
     $phone = mysqli_real_escape_string($conn, $_POST['phone']);
 
-    mysqli_query($conn, "
-        UPDATE users 
-        SET email='$email',
-            phone='$phone'
-        WHERE user_id='$user_id'
-    ");
+    /* -------- PROFILE IMAGE UPLOAD -------- */
+    $profile_pic = null;
+
+    if (!empty($_FILES['profile_pic']['name'])) {
+
+        $target_dir = "uploads/";
+
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+
+        $file_name = time() . "_" . basename($_FILES["profile_pic"]["name"]);
+        $target_file = $target_dir . $file_name;
+
+        move_uploaded_file($_FILES["profile_pic"]["tmp_name"], $target_file);
+
+        $profile_pic = $file_name;
+
+        mysqli_query($conn, "
+            UPDATE users 
+            SET email='$email',
+                phone='$phone',
+                profile_pic='$profile_pic'
+            WHERE user_id='$user_id'
+        ");
+
+    } else {
+
+        mysqli_query($conn, "
+            UPDATE users 
+            SET email='$email',
+                phone='$phone'
+            WHERE user_id='$user_id'
+        ");
+    }
 
     $msg = "Profile updated successfully!";
 }
@@ -64,7 +93,7 @@ if (isset($_POST['change_password'])) {
 
 /* ================= FETCH USER ================= */
 $user_query = mysqli_query($conn, "
-    SELECT full_name, email, phone, gender
+    SELECT full_name, email, phone, gender, profile_pic
     FROM users
     WHERE user_id='$user_id'
 ");
@@ -76,10 +105,7 @@ $user = mysqli_fetch_assoc($user_query);
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>User Profile</title>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<title>My Profile</title>
 
 <style>
 body{
@@ -102,160 +128,115 @@ body{
     box-shadow:0 5px 15px rgba(0,0,0,0.05);
 }
 
-h2{
-    text-align:center;
-    color:#1e293b;
-    margin-bottom:10px;
-}
-
-h3{
-    margin-bottom:15px;
-    color:#334155;
-}
+h2,h3{text-align:center;}
 
 .input-group{
     margin-bottom:15px;
-    display:flex;
-    flex-direction:column;
 }
 
 label{
     font-size:13px;
     font-weight:bold;
+    display:block;
     margin-bottom:5px;
-    color:#475569;
 }
 
 input{
+    width:100%;
     padding:12px;
     border:1px solid #cbd5e1;
     border-radius:10px;
-    outline:none;
-}
-
-input:focus{
-    border-color:#2563eb;
 }
 
 button{
-    background:#2563eb;
-    color:white;
-    border:none;
+    width:100%;
     padding:12px;
+    border:none;
+    background:#111;
+    color:white;
     border-radius:10px;
     cursor:pointer;
-    width:100%;
-    font-weight:bold;
 }
 
 button:hover{
-    background:#1d4ed8;
+    background:#333;
 }
 
-.info{
+/* PROFILE PIC */
+.profile-box{
     text-align:center;
     margin-bottom:20px;
-    color:#64748b;
-    font-size:14px;
 }
 
-.alert{
-    padding:10px;
-    margin-bottom:15px;
-    border-radius:8px;
-    font-size:14px;
-}
-
-.success{
-    background:#dcfce7;
-    color:#166534;
-}
-
-.error{
-    background:#fee2e2;
-    color:#991b1b;
+.profile-box img{
+    width:110px;
+    height:110px;
+    border-radius:50%;
+    object-fit:cover;
+    border:3px solid #111;
 }
 </style>
 </head>
 
 <body>
 
-<?php include 'auth.php'; ?>
-<?php include '.php'; ?>
-
 <div class="container">
 
-<h2><i class="fas fa-user-circle"></i> My Profile</h2>
+<h2>My Profile</h2>
 
-<div class="info">
-    Welcome, <?php echo htmlspecialchars($user['full_name']); ?>
-</div>
-
-<!-- SUCCESS / ERROR MESSAGES -->
 <?php if(isset($msg)): ?>
-    <div class="alert success">
-        <i class="fas fa-check-circle"></i> <?php echo $msg; ?>
-    </div>
+    <p style="color:green;text-align:center;"><?= $msg ?></p>
 <?php endif; ?>
 
 <?php if(isset($msg2)): ?>
-    <div class="alert error">
-        <i class="fas fa-exclamation-circle"></i> <?php echo $msg2; ?>
-    </div>
+    <p style="color:red;text-align:center;"><?= $msg2 ?></p>
 <?php endif; ?>
 
-<!-- PROFILE UPDATE -->
+<!-- PROFILE PIC -->
 <div class="card">
 
-<h3><i class="fas fa-edit"></i> Update Profile</h3>
+<div class="profile-box">
+    <img src="uploads/profiles/<?= $user['profile_pic'] ?? 'default.png'; ?>">
+</div>
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
+
+    <div class="input-group">
+        <label>Change Profile Picture</label>
+        <input type="file" name="profile_pic" accept="image/*">
+    </div>
 
     <div class="input-group">
         <label>Email</label>
-        <input type="email" name="email"
-        value="<?php echo htmlspecialchars($user['email']); ?>"
-        required>
+        <input type="email" name="email" value="<?= $user['email']; ?>">
     </div>
 
     <div class="input-group">
         <label>Phone</label>
-        <input type="text" name="phone"
-        value="<?php echo htmlspecialchars($user['phone']); ?>">
+        <input type="text" name="phone" value="<?= $user['phone']; ?>">
     </div>
 
     <button type="submit" name="update_profile">
-        <i class="fas fa-save"></i> Update Profile
+        Update Profile
     </button>
 
 </form>
 
 </div>
 
-<!-- PASSWORD CHANGE -->
+<!-- PASSWORD -->
 <div class="card">
 
-<h3><i class="fas fa-lock"></i> Change Password</h3>
+<h3>Change Password</h3>
 
 <form method="POST">
 
-    <div class="input-group">
-        <label>Current Password</label>
-        <input type="password" name="current_password" required>
-    </div>
-
-    <div class="input-group">
-        <label>New Password</label>
-        <input type="password" name="new_password" required>
-    </div>
-
-    <div class="input-group">
-        <label>Confirm Password</label>
-        <input type="password" name="confirm_password" required>
-    </div>
+    <input type="password" name="current_password" placeholder="Current Password" required><br><br>
+    <input type="password" name="new_password" placeholder="New Password" required><br><br>
+    <input type="password" name="confirm_password" placeholder="Confirm Password" required><br><br>
 
     <button type="submit" name="change_password">
-        <i class="fas fa-shield-alt"></i> Change Password
+        Change Password
     </button>
 
 </form>
